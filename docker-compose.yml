@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:16
+    container_name: turnos_db
+    environment:
+      POSTGRES_USER: turnos
+      POSTGRES_PASSWORD: turnos123
+      POSTGRES_DB: turnos
+    volumes:
+      - datos_db:/var/lib/postgresql/data
+
+volumes:
+  datos_db:
