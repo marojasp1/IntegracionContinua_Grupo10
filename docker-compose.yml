@@ -8,6 +8,25 @@ services:
       POSTGRES_DB: turnos
     volumes:
       - datos_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turnos -d turnos"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: ./app
+    container_name: turnos_web
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_USER: turnos
+      DB_PASSWORD: turnos123
+      DB_NAME: turnos
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   datos_db:
