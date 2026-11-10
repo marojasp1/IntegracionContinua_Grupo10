@@ -1,32 +1,58 @@
+# Plataforma de turnos EPS: dos contenedores comunicados entre sí.
+# La aplicación (web) llega a PostgreSQL usando el hostname "db",
+# que es el nombre del servicio en esta red.
+
 services:
   db:
     image: postgres:16
     container_name: turnos_db
     environment:
-      POSTGRES_USER: turnos
-      POSTGRES_PASSWORD: turnos123
-      POSTGRES_DB: turnos
+      POSTGRES_USER: ${POSTGRES_USER:-turnos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-turnos123}
+      POSTGRES_DB: ${POSTGRES_DB:-turnos}
     volumes:
       - datos_db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U turnos -d turnos"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 3s
       timeout: 3s
       retries: 10
+    networks:
+      - turnos_red
 
   web:
     build: ./app
     container_name: turnos_web
     ports:
-      - "5000:5000"
+      - "${APP_PORT:-5000}:5000"
     environment:
+      PYTHONUNBUFFERED: "1"
       DB_HOST: db
-      DB_USER: turnos
-      DB_PASSWORD: turnos123
-      DB_NAME: turnos
+      DB_USER: ${POSTGRES_USER:-turnos}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-turnos123}
+      DB_NAME: ${POSTGRES_DB:-turnos}
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - turnos_red
 
 volumes:
   datos_db:
+
+networks:
+  turnos_red:
+    name: turnos_red
+    driver: bridge
