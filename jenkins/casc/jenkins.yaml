@@ -1,0 +1,41 @@
+# Jenkins Configuration as Code (JCasC)
+jenkins:
+  systemMessage: "Jenkins - Turnos EPS (Integración Continua, Grupo 10)"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "${JENKINS_ADMIN_ID:-admin}"
+            permissions: ["Overall/Administer"]
+        - group:
+            name: "authenticated"
+            permissions: ["Overall/Read", "Job/Read"]
+
+unclassified:
+  location:
+    url: "${JENKINS_URL:-http://localhost:8080/}"
+
+jobs:
+  - script: >
+      pipelineJob('turnos-eps-ci') {
+        description('Pipeline CI: pruebas, build de imágenes, despliegue de prueba y prueba de humo.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('${REPO_URL:-https://github.com/marojasp1/IntegracionContinua_Grupo10.git}') }
+                branches('*/${REPO_BRANCH:-main}')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(false)
+          }
+        }
+      }

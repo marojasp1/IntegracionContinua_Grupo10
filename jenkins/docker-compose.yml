@@ -1,0 +1,26 @@
+# Levanta Jenkins para el proyecto. Uso (desde la carpeta jenkins/):
+#   cp .env.example .env   # y cambiar la contraseña
+#   docker compose up -d --build
+#   abrir http://localhost:8080
+services:
+  jenkins:
+    build: .
+    container_name: jenkins_turnos
+    restart: unless-stopped
+    ports:
+      - "${JENKINS_PORT:-8080}:8080"
+    environment:
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Defina JENKINS_ADMIN_PASSWORD en jenkins/.env}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080/}
+      REPO_URL: ${REPO_URL:-https://github.com/marojasp1/IntegracionContinua_Grupo10.git}
+      REPO_BRANCH: ${REPO_BRANCH:-main}
+    # Jenkins usa el Docker del anfitrión (Docker-outside-of-Docker)
+    group_add:
+      - "${DOCKER_GID:-999}"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins_home:
