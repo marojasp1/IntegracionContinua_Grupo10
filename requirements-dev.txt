@@ -1,0 +1,3 @@
+# Dependencias solo para pruebas y análisis estático (no van en la imagen de la app)
+pytest==8.3.3
+flake8==7.1.1

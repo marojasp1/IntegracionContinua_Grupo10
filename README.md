@@ -94,3 +94,43 @@ guardados):
 ```bash
 docker compose down -v
 ```
+
+## Entrega 2 (semana 5): integración continua con Jenkins
+
+Jenkins actúa como gestor de operaciones: cada cambio en `main` dispara el
+pipeline definido en el `Jenkinsfile` de la raíz.
+
+| Etapa | Qué hace |
+|---|---|
+| Checkout | Descarga el commit desde GitHub. |
+| Análisis estático y pruebas unitarias | `flake8` + `pytest` (9 pruebas en `tests/`, sin base de datos, con reporte JUnit). |
+| Construir imágenes Docker | `docker compose build --pull`. |
+| Desplegar entorno de prueba | Levanta `web` y `db` con nombres únicos por build (`docker-compose.ci.yml`) y espera a que estén healthy. |
+| Prueba de humo (web ↔ db) | `scripts/smoke_test.sh`: HTTP 200, pedir turno (302 con código), fila en PostgreSQL, `/turnos` y `/admin`. |
+| Post | Guarda logs y reportes como artefactos y baja los contenedores (`down -v`). |
+
+### Levantar Jenkins
+
+```bash
+cd jenkins
+cp .env.example .env          # cambiar JENKINS_ADMIN_PASSWORD y DOCKER_GID
+stat -c %g /var/run/docker.sock   # valor para DOCKER_GID
+docker compose up -d --build
+```
+
+Abrir <http://localhost:8080> e ingresar con el usuario de `.env`. La
+configuración como código (`jenkins/casc/jenkins.yaml`) crea el usuario
+administrador y el job `turnos-eps-ci`, que lee el `Jenkinsfile` de este
+repositorio. Los plugins están en `jenkins/plugins.txt`.
+
+### Ejecutar lo mismo sin Jenkins
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r app/requirements.txt -r requirements-dev.txt
+flake8 app tests && pytest -q
+export COMPOSE_PROJECT_NAME=turnos-ci-local COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml APP_PORT=5050
+docker compose up -d --build --wait
+./scripts/smoke_test.sh turnos-ci-local
+docker compose down -v
+```

@@ -1,0 +1,12 @@
+# Override usado solo por Jenkins (COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml).
+# docker-compose.yml fija nombres de contenedor y de red; aquí se vuelven únicos
+# por build (COMPOSE_PROJECT_NAME) para no chocar con el entorno de desarrollo.
+services:
+  db:
+    container_name: ${COMPOSE_PROJECT_NAME}-db
+  web:
+    container_name: ${COMPOSE_PROJECT_NAME}-web
+
+networks:
+  turnos_red:
+    name: ${COMPOSE_PROJECT_NAME}-red
